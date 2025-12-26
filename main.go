@@ -1,54 +1,17 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/aialok/url-shortner/internal/model"
+	"github.com/aialok/url-shortner/internal/repository"
+	"github.com/aialok/url-shortner/internal/service"
 )
 
-// InMemoryDB to store the URL data
-var db = make(map[string]model.URL)
-
-// GenerateShortUrl function
-func GenerateShortUrl(url string) string {
-	hasher := sha256.New()
-	hasher.Write([]byte(url))
-	hashBytes := hasher.Sum(nil)
-	hashString := hex.EncodeToString(hashBytes)
-	return hashString[:6]
-}
-
-// Store URL in DB
-func SaveInDB(OriginalUrl string) {
-	shortUrl := GenerateShortUrl(OriginalUrl)
-	url := model.URL{
-		Id:          shortUrl,
-		OriginalUrl: OriginalUrl,
-		ShortUrl:    shortUrl,
-		Visits:      0,
-		CreatedAt:   time.Now(),
-	}
-	db[shortUrl] = url
-}
-
-// Get URL from DB
-func GetFromDB(shortUrl string) (model.URL, bool) {
-	url, exists := db[shortUrl]
-	fmt.Println("Before:", url.Visits)
-	if !exists {
-		return model.URL{}, false
-	}
-	url.Visits++
-	db[shortUrl] = url
-	fmt.Println("After:", url.Visits)
-	return url, true
-}
+var repo = repository.NewURLRepository()
+var svc = service.NewShortenerService(repo)
 
 type HealthResponse struct {
 	Status string `json:"status"`
@@ -77,7 +40,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "short_url is required", http.StatusBadRequest)
 		return
 	}
-	url, exists := GetFromDB(shortURL)
+	url, exists := svc.Resolve(shortURL)
 	if !exists {
 		http.Error(w, "url not found", http.StatusNotFound)
 		return
@@ -95,16 +58,10 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "original_url is required", http.StatusBadRequest)
 		return
 	}
-	SaveInDB(originalURL)
-	url, exists := GetFromDB(GenerateShortUrl(originalURL))
-	if !exists {
-		http.Error(w, "url not found", http.StatusNotFound)
-		return
-	}
-	urlJSON := url
+	url := svc.Shorten(originalURL)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(urlJSON); err != nil {
+	if err := json.NewEncoder(w).Encode(url); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -123,7 +80,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, exists := GetFromDB(shortID)
+	url, exists := svc.Resolve(shortID)
 	if !exists {
 		http.NotFound(w, r)
 		return
@@ -133,10 +90,6 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	url := "https://www.google.com"
-	SaveInDB(url)
-	fmt.Println(GetFromDB(GenerateShortUrl(url)))
-
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/url", urlHandler)
 	http.HandleFunc("/shorten", shortenHandler)
