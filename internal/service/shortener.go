@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"time"
 
-	"github.com/aialok/url-shortner/internal/model"
-	"github.com/aialok/url-shortner/internal/repository"
+	"github.com/aialok/tiny-url-shortner/internal/model"
+	"github.com/aialok/tiny-url-shortner/internal/repository"
 )
 
 type ShortenerService struct {

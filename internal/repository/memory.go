@@ -3,7 +3,7 @@ package repository
 import (
 	"sync"
 
-	"github.com/aialok/url-shortner/internal/model"
+	"github.com/aialok/tiny-url-shortner/internal/model"
 )
 
 type URLRepository struct {

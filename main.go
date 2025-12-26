@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aialok/url-shortner/internal/repository"
-	"github.com/aialok/url-shortner/internal/service"
+	"github.com/aialok/tiny-url-shortner/internal/repository"
+	"github.com/aialok/tiny-url-shortner/internal/service"
 )
 
 var repo = repository.NewURLRepository()
