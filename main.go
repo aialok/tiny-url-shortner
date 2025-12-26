@@ -8,19 +8,12 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/aialok/url-shortner/internal/model"
 )
 
-// URL Struct
-type URL struct {
-	Id          string    `json:"id"`
-	OriginalUrl string    `json:"original_url"`
-	ShortUrl    string    `json:"short_url"`
-	Visits      int       `json:"visits"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
 // InMemoryDB to store the URL data
-var db = make(map[string]URL)
+var db = make(map[string]model.URL)
 
 // GenerateShortUrl function
 func GenerateShortUrl(url string) string {
@@ -34,7 +27,7 @@ func GenerateShortUrl(url string) string {
 // Store URL in DB
 func SaveInDB(OriginalUrl string) {
 	shortUrl := GenerateShortUrl(OriginalUrl)
-	url := URL{
+	url := model.URL{
 		Id:          shortUrl,
 		OriginalUrl: OriginalUrl,
 		ShortUrl:    shortUrl,
@@ -45,11 +38,11 @@ func SaveInDB(OriginalUrl string) {
 }
 
 // Get URL from DB
-func GetFromDB(shortUrl string) (URL, bool) {
+func GetFromDB(shortUrl string) (model.URL, bool) {
 	url, exists := db[shortUrl]
 	fmt.Println("Before:", url.Visits)
 	if !exists {
-		return URL{}, false
+		return model.URL{}, false
 	}
 	url.Visits++
 	db[shortUrl] = url
